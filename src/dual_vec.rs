@@ -97,6 +97,16 @@ where
     try_gradient(|x| Ok::<_, Infallible>(g(x)), x).unwrap()
 }
 
+pub fn gradient_dyn<T: DualNum<F>, F: DualNumFloat, D: Dim>(
+    g: &dyn Fn(OVector<DualVec<T, F, D>, D>) -> DualVec<T, F, D>,
+    x: OVector<T, D>,
+) -> (T, OVector<T, D>)
+where
+    DefaultAllocator: Allocator<T, D> + Allocator<DualVec<T, F, D>, D>,
+{
+    try_gradient_dyn(&|x| Ok::<_, Infallible>(g(x)), x).unwrap()
+}
+
 /// Variant of [gradient] for fallible functions.
 pub fn try_gradient<G, T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
     g: G,
@@ -104,6 +114,21 @@ pub fn try_gradient<G, T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
 ) -> Result<(T, OVector<T, D>), E>
 where
     G: FnOnce(OVector<DualVec<T, F, D>, D>) -> Result<DualVec<T, F, D>, E>,
+    DefaultAllocator: Allocator<T, D> + Allocator<DualVec<T, F, D>, D>,
+{
+    let mut x = x.map(DualVec::from_re);
+    let (r, c) = x.shape_generic();
+    for (i, xi) in x.iter_mut().enumerate() {
+        xi.eps = Derivative::derivative_generic(r, c, i);
+    }
+    g(x).map(|res| (res.re, res.eps.unwrap_generic(r, c)))
+}
+
+pub fn try_gradient_dyn<T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
+    g: &dyn Fn(OVector<DualVec<T, F, D>, D>) -> Result<DualVec<T, F, D>, E>,
+    x: OVector<T, D>,
+) -> Result<(T, OVector<T, D>), E>
+where
     DefaultAllocator: Allocator<T, D> + Allocator<DualVec<T, F, D>, D>,
 {
     let mut x = x.map(DualVec::from_re);

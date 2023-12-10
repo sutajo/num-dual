@@ -91,6 +91,19 @@ where
     try_hessian(|x| Ok::<_, Infallible>(g(x)), x).unwrap()
 }
 
+pub fn hessian_dyn<T: DualNum<F>, F: DualNumFloat, D: Dim>(
+    g: &dyn Fn(OVector<Dual2Vec<T, F, D>, D>) -> Dual2Vec<T, F, D>,
+    x: OVector<T, D>,
+) -> (T, OVector<T, D>, OMatrix<T, D, D>)
+where
+    DefaultAllocator: Allocator<T, D>
+        + Allocator<T, U1, D>
+        + Allocator<T, D, D>
+        + Allocator<Dual2Vec<T, F, D>, D>,
+{
+    try_hessian_dyn(&|x| Ok::<_, Infallible>(g(x)), x).unwrap()
+}
+
 /// Variant of [hessian] for fallible functions.
 #[allow(clippy::type_complexity)]
 pub fn try_hessian<G, T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
@@ -99,6 +112,30 @@ pub fn try_hessian<G, T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
 ) -> Result<(T, OVector<T, D>, OMatrix<T, D, D>), E>
 where
     G: FnOnce(OVector<Dual2Vec<T, F, D>, D>) -> Result<Dual2Vec<T, F, D>, E>,
+    DefaultAllocator: Allocator<T, D>
+        + Allocator<T, U1, D>
+        + Allocator<T, D, D>
+        + Allocator<Dual2Vec<T, F, D>, D>,
+{
+    let mut x = x.map(Dual2Vec::from_re);
+    let (r, c) = x.shape_generic();
+    for (i, xi) in x.iter_mut().enumerate() {
+        xi.v1 = Derivative::derivative_generic(c, r, i)
+    }
+    g(x).map(|res| {
+        (
+            res.re,
+            res.v1.unwrap_generic(c, r).transpose(),
+            res.v2.unwrap_generic(r, r),
+        )
+    })
+}
+
+pub fn try_hessian_dyn<T: DualNum<F>, F: DualNumFloat, E, D: Dim>(
+    g: &dyn Fn(OVector<Dual2Vec<T, F, D>, D>) -> Result<Dual2Vec<T, F, D>, E>,
+    x: OVector<T, D>,
+) -> Result<(T, OVector<T, D>, OMatrix<T, D, D>), E>
+where
     DefaultAllocator: Allocator<T, D>
         + Allocator<T, U1, D>
         + Allocator<T, D, D>
