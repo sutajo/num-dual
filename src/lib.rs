@@ -66,12 +66,12 @@ pub use derivative::Derivative;
 pub use dual::{first_derivative, try_first_derivative, Dual, Dual32, Dual64};
 pub use dual2::{second_derivative, try_second_derivative, Dual2, Dual2_32, Dual2_64};
 pub use dual2_vec::{
-    hessian, try_hessian, Dual2DVec32, Dual2DVec64, Dual2SVec32, Dual2SVec64, Dual2Vec, Dual2Vec32,
+    hessian, hessian_dyn, try_hessian, try_hessian_dyn, Dual2DVec32, Dual2DVec64, Dual2SVec32, Dual2SVec64, Dual2Vec, Dual2Vec32,
     Dual2Vec64,
 };
 pub use dual3::{third_derivative, try_third_derivative, Dual3, Dual3_32, Dual3_64};
 pub use dual_vec::{
-    gradient, jacobian, try_gradient, try_jacobian, DualDVec32, DualDVec64, DualSVec32, DualSVec64,
+    gradient, gradient_dyn, jacobian, try_gradient, try_gradient_dyn, try_jacobian, DualDVec32, DualDVec64, DualSVec32, DualSVec64,
     DualVec, DualVec32, DualVec64,
 };
 pub use hyperdual::{
